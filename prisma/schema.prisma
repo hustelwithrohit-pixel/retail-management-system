@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  STAFF
+}
+
+enum StockMovementType {
+  OPENING
+  SALE
+  PURCHASE
+  ADJUSTMENT
+  RETURN
+}
+
+enum ReminderType {
+  GENERAL
+  CUSTOMER
+}
+
+enum ReminderStatus {
+  PENDING
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  name           String
+  sku            String?  @unique
+  description    String?
+  category       String?
+  price          Float
+  costPrice      Float?   @default(0)
+  gstRate        Float    @default(0) // GST percentage (e.g., 18 for 18%)
+  openingStock   Float    @default(0)
+  currentStock   Float    @default(0)
+  lowStockAlert  Float?   @default(10)
+  overStockAlert Float?
+  unit           String   @default("pcs")
+  barcode        String?
+  imageUrl       String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  invoiceItems   InvoiceItem[]
+  stockMovements StockMovement[]
+
+  @@map("products")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  pincode   String?
+  gstin     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices  Invoice[]
+  reminders Reminder[]
+
+  @@map("customers")
+}
+
+model Invoice {
+  id              String   @id @default(uuid())
+  invoiceNumber   String   @unique
+  customerId      String?
+  customerName    String // Store customer name for historical records
+  customerPhone   String?
+  customerEmail   String?
+  customerAddress String?
+  customerGstin   String?
+  subtotal        Float
+  cgst            Float    @default(0)
+  sgst            Float    @default(0)
+  totalGst        Float    @default(0)
+  discount        Float    @default(0)
+  total           Float
+  paymentMethod   String?  @default("cash")
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customer       Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items          InvoiceItem[]
+  stockMovements StockMovement[]
+
+  @@index([invoiceNumber])
+  @@index([createdAt])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  productId   String
+  productName String // Store product name for historical records
+  quantity    Float
+  price       Float
+  gstRate     Float
+  cgst        Float
+  sgst        Float
+  totalGst    Float
+  subtotal    Float
+  total       Float
+  createdAt   DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("invoice_items")
+}
+
+model StockMovement {
+  id            String            @id @default(uuid())
+  productId     String
+  invoiceId     String?
+  type          StockMovementType
+  quantity      Float
+  previousStock Float
+  newStock      Float
+  reason        String?
+  notes         String?
+  createdAt     DateTime          @default(now())
+  createdBy     String?
+
+  product Product  @relation(fields: [productId], references: [id])
+  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([createdAt])
+  @@index([type])
+  @@map("stock_movements")
+}
+
+model Reminder {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  type        ReminderType   @default(GENERAL)
+  status      ReminderStatus @default(PENDING)
+  dueDate     DateTime?
+  customerId  String?
+  emailSent   Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([dueDate])
+  @@map("reminders")
+}
