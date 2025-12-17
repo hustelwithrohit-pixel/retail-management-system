@@ -1,43 +1,29 @@
-import { compare, hash } from 'bcryptjs'
-import { prisma } from './prisma'
-import type { UserRole } from '@prisma/client'
+import type { NextAuthOptions } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
 
-export async function hashPassword(password: string): Promise<string> {
-  return hash(password, 12)
+export const authOptions: NextAuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        // TEMP: replace with real DB logic later
+        return {
+          id: "1",
+          email: credentials.email,
+        }
+      },
+    }),
+  ],
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 }
-
-export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-  return compare(password, hashedPassword)
-}
-
-export async function createUser(email: string, password: string, name: string, role: UserRole = 'STAFF') {
-  const hashedPassword = await hashPassword(password)
-  return prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      name,
-      role,
-    },
-  })
-}
-
-export async function getUserByEmail(email: string) {
-  return prisma.user.findUnique({
-    where: { email },
-  })
-}
-
-export async function getUserById(id: string) {
-  return prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      createdAt: true,
-    },
-  })
-}
-
