@@ -27,7 +27,13 @@ export async function POST(request: NextRequest) {
     const userCount = await prisma.user.count()
     const role = userCount === 0 ? 'OWNER' : 'STAFF'
 
-    const user = await createUser(email, password, name, role)
+const user = await createUser({
+  email,
+  password,
+  name,
+  role,
+})
+
 
     return NextResponse.json({
       id: user.id,
