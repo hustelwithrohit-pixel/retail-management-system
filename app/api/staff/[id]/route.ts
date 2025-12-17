@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireOwner } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword } from "@/lib/password"
 import { z } from 'zod'
 
 const updateStaffSchema = z.object({

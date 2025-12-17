@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireOwner } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { createUser, getUserByEmail } from '@/lib/auth'
+import { createUser, getUserByEmail } from "@/lib/user"
 import { z } from 'zod'
 
 const staffSchema = z.object({
