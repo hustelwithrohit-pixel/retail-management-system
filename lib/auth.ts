@@ -1,8 +1,38 @@
 import type { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { prisma } from "@/lib/prisma"
 import { getUserByEmail } from "@/lib/user"
-import { verifyPassword } from "@/lib/password"
+import { hashPassword, verifyPassword } from "@/lib/password"
 
+/* ============================
+   USER CREATION (USED BY APIs)
+============================ */
+export async function createUser({
+  email,
+  password,
+  name,
+  role,
+}: {
+  email: string
+  password: string
+  name: string
+  role: "OWNER" | "STAFF"
+}) {
+  const hashedPassword = await hashPassword(password)
+
+  return prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      name,
+      role,
+    },
+  })
+}
+
+/* ============================
+   NEXT-AUTH CONFIG
+============================ */
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -34,6 +64,8 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+  },
   secret: process.env.NEXTAUTH_SECRET,
 }
