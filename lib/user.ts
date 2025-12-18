@@ -1,14 +1,18 @@
 import { prisma } from "@/lib/prisma"
 import { hashPassword } from "@/lib/password"
+import { UserRole } from "@prisma/client"
 
 export async function getUserByEmail(email: string) {
-  return prisma.user.findUnique({ where: { email } })
+  return prisma.user.findUnique({
+    where: { email },
+  })
 }
 
 export async function createUser(data: {
   email: string
   password: string
-  role?: string
+  name: string
+  role?: UserRole
 }) {
   const hashedPassword = await hashPassword(data.password)
 
@@ -16,7 +20,8 @@ export async function createUser(data: {
     data: {
       email: data.email,
       password: hashedPassword,
-      role: data.role ?? "USER",
+      name: data.name,
+      role: data.role ?? UserRole.STAFF,
     },
   })
 }
